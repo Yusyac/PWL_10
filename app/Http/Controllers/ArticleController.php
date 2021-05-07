@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use PDF;
 
-
 class ArticleController extends Controller
 {
     /**
@@ -27,7 +26,7 @@ class ArticleController extends Controller
      */
     public function create()
     {
-       return view('article.create');
+        return view('articles.Create');
     }
 
     /**
@@ -37,16 +36,16 @@ class ArticleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-    {
+    {   
 
         if ($request->file('image')){
             $image_name = $request->file('image')->store('images', 'public');
         }
 
         Article::create([
-            'title' => $request->title,
-            'content' => $request->content,
-            'featured_image' => $image_name,
+            'Title' => $request->title,
+            'Content' => $request->content,
+            'Featured_Image' => $image_name,
         ]);
         return 'Artikel berhasil disimpan';
 
@@ -69,11 +68,11 @@ class ArticleController extends Controller
      * @param  \App\Models\Article  $article
      * @return \Illuminate\Http\Response
      */
-    public function edit( $id)
+    public function edit($id)
     {
         $article = Article::find($id);
 
-        return view('article.edit', ['article' => $article]);
+        return view('articles.Edit', ['article' => $article]);
     }
 
     /**
@@ -85,19 +84,20 @@ class ArticleController extends Controller
      */
     public function update(Request $request, $id)
     {
-       $article = Article::find($id);
+        $article = Article::find($id);
 
-       $article->title = $request->title;
-       $article->content = $request->content;
+        $article->Title = $request->title;
+        $article->Content = $request->content;
 
-       if($article->featured_image && file_exists(storage_path('app/public/'. $article->featured_image))){
-        Storage::delete('public/'.$article->featured_image);
-    }
-    $image_name = $request->file('image')->store('images', 'public');
-    $article->featured_image = $image_name;
+        if($article->Featured_Image && file_exists(storage_path('app/public/'. $article->Featured_Image))){
+        Storage::delete('public/'.$article->Featured_Image);
+        }
 
-    $article->save();
-    return 'Artikel Berhasil Diubah';
+        $image_name = $request->file('image')->store('images', 'public');
+        $article->Featured_Image = $image_name;
+
+        $article->save();
+        return 'Artikel Berhasil Diubah';
     }
 
     /**
@@ -111,16 +111,10 @@ class ArticleController extends Controller
         //
     }
 
-     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Article  $article
-     * @return \Illuminate\Http\Response
-     */
     public function cetak_pdf()
     {
         $article = Article::all();
-        $pdf = PDF::loadview('article.articles_pdf', ['articles'=>$article]);
+        $pdf = PDF::loadview('articles.Articles_Pdf', ['article' => $article]);
         return $pdf->stream();
     }
 }

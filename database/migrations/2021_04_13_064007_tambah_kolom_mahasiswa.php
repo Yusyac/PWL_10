@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateTableMahasiswa extends Migration
+class TambahKolomMahasiswa extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,10 @@ class UpdateTableMahasiswa extends Migration
      */
     public function up()
     {
-        //
+        Schema::table('mahasiswa', function (Blueprint $table) {
+            $table->date('Tanggal_Lahir')->after('Nama');
+            $table->string('Email')->after('Jurusan')->unique()->nullable();
+        });
     }
 
     /**
@@ -24,7 +27,8 @@ class UpdateTableMahasiswa extends Migration
     public function down()
     {
         Schema::table('mahasiswa', function (Blueprint $table) {
-            $table->string('foto')->after('nama')->nullable();
+            $table->dropColumn('Email');
+            $table->dropColumn('Tanggal_Lahir');
         });
     }
 }

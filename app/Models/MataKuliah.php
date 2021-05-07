@@ -4,21 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use app\Models\Mahasiswa;
 
 class MataKuliah extends Model
 {
     use HasFactory;
-    protected $table = 'matakuliah'; //mendefinisikan model terkait dengan tabel matakuliah
+    protected $table = 'matakuliah';
 
     protected $fillable = [
-        'nama_matkul',
-        'sks',
-        'jam',
-        'semseter'
+        'id',
+        'Nama_Matkul',
+        'SKS',
+        'Jam',
+        'Semester'
     ];
-
-    public function mahasiswa(){
-        return $this->belongsToMany(Mahasiswa::class, 'mahasiswa_matakuliah', 'mahasiswa_id', 'matakuliah_id')->withPivot('nilai');
+    
+    public function mahasiswa()
+    {
+        return $this->belongsToMany(Mahasiswa::class, 'mahasiswa_matakuliah', 'Matakuliah_Id', 'Mahasiswa_Nim')->withPivot('Nilai');
     }
 }

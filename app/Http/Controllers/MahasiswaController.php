@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Mahasiswa;
+use App\Models\Mahasiswa_Matakuliah;
 use App\Models\Kelas;
 use Illuminate\Support\Facades\Storage;
 use PDF;
@@ -18,10 +19,11 @@ class MahasiswaController extends Controller
      */
     public function index()
     {
+        //$mahasiswas = Mahasiswa::all()
         $mahasiswas = Mahasiswa::with('kelas')->get();
-        // Mengambil semua isi tabel
-        $paginate = Mahasiswa::orderBy('nim', 'desc')->paginate(1);
-        return view('mahasiswa.index', compact('mahasiswas', 'paginate'))->with('i', (request()->input('page', 1) - 1) * 5);
+        $posts = Mahasiswa::orderBy('Nim', 'desc')->paginate(5); 
+        return view('users.Index', compact('mahasiswas', 'posts'),['mahasiswas' => $mahasiswas,'posts' => $posts]); 
+        with('i', (request()->input('page', 1) - 1) * 5);
     }
 
     /**
@@ -30,9 +32,9 @@ class MahasiswaController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function create()
-    {
+    {   
         $kelas = Kelas::all();
-        return view('mahasiswas.create', compact('kelas'));
+        return view('users.Create', ['kelas' => $kelas]);
     }
 
     /**
@@ -43,99 +45,133 @@ class MahasiswaController extends Controller
      */
     public function store(Request $request)
     {
-        // $request->validate([
-        //     'nim' => 'required', 'nama' => 'required', 'kelas_id' => 'required', 'jurusan' => 'required', 'no_handphone' => 'required', 'email' => 'required', 'tanggal_lahir' => 'required'
-        // ]); //fungsieloquentuntukmenambahdata
-        $image = $request->file('foto');
-        if ($image) {
+        $request->validate([ 
+            'Nim' => 'required', 
+            'Nama' => 'required',
+            'Tanggal_Lahir' => 'required',
+            'Kelas' => 'required', 
+            'Jurusan' => 'required',
+            'Email' => 'required', 
+            'No_Handphone' => 'required', ]);
+            
+            $image = $request->file('foto');
+            if ($image) {
             $image_name = $request->file('foto')->store('images', 'public');
-        }
-        Mahasiswa::create([
+            }
 
-            'nim' => $request->nim, 'nama' => $request->nama, 'kelas_id' => $request->kelas_id, 'jurusan' => $request->jurusan, 'no_handphone' => $request->no_handphone, 'email' => $request->email, 'tanggal_lahir' => $request->tanggal_lahir, 'foto' => $image_name
+            //Mahasiswa::create($request->all());
+            $kelas = Kelas::find($request->get('Kelas'));
 
-        ]);
-        //jikadataberhasilditambahkan,akankembalikehalamanutama
-        return redirect()->route('mahasiswa.index')->with('success', 'Mahasiswa Berhasil Ditambahkan');
+            $mahasiswa = new Mahasiswa();
+            $mahasiswa->Nim = $request->get('Nim');
+            $mahasiswa->Nama = $request->get('Nama');
+            $mahasiswa->Foto = $image_name;
+            $mahasiswa->Tanggal_Lahir = $request->get('Tanggal_Lahir');
+            $mahasiswa->Jurusan = $request->get('Jurusan');
+            $mahasiswa->Email = $request->get('Email');
+            $mahasiswa->No_Handphone = $request->get('No_Handphone');
+            $mahasiswa->kelas()->associate($kelas);
+            $mahasiswa->save();
+
+            return redirect()->route('mahasiswa.index') ->with('Success', 'Mahasiswa Berhasil Ditambahkan');
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  int  $Nim
      * @return \Illuminate\Http\Response
      */
-    public function show($nim)
+    public function show($Nim)
     {
-        $mahasiswa = Mahasiswa::find($nim);
-        return view('mahasiswas.detail', compact('mahasiswa'));
+        //$List = Mahasiswa::find($Nim);
+        $List = Mahasiswa::with('kelas')->where('Nim', $Nim)->first();
+        return view('users.Detail', compact('List'), ['List' => $List]);
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param  int  $Nim
      * @return \Illuminate\Http\Response
      */
-    public function edit($nim)
+    public function edit($Nim)
     {
-        $mahasiswa = Mahasiswa::find($nim);
+        //$List = Mahasiswa::find($Nim);
+        $List = Mahasiswa::with('kelas')->where('Nim', $Nim)->first();
         $kelas = Kelas::all();
-        return view('mahasiswas.edit', compact('mahasiswa', 'kelas'));
+        return view('users.Edit', compact('List', 'kelas'));
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  int  $Nim
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $nim)
+    public function update(Request $request, $Nim)
     {
-        $request->validate([
-            'nim' => 'required', 'nama' => 'required', 'kelas_id' => 'required', 'jurusan' => 'required', 'no_handphone' => 'required', 'email' => 'required', 'tanggal_lahir' => 'required'
-        ]);
-        $mhs = Mahasiswa::find($nim);
-        $mhs->nim = $request->nim;
-        $mhs->nama = $request->nama;
-        $mhs->kelas_id = $request->kelas_id;
-        $mhs->jurusan = $request->jurusan;
-        $mhs->no_handphone = $request->no_handphone;
-        $mhs->email = $request->email;
-        $mhs->tanggal_lahir = $request->tanggal_lahir;
-        if ($mhs->foto && file_exists(storage_path('app/public/' . $mhs->foto))) {
-            Storage::delete('public/' . $mhs->foto);
-        }
-        $image_name = $request->file('foto')->store('images', 'public');
-        $mhs->foto = $image_name;
-        $mhs->save();
-        return redirect()->route('mahasiswa.index')->with('success', 'Mahasiswa Berhasil Diupdate');
+        $request->validate([ 
+            'Nim' => 'required', 
+            'Nama' => 'required',
+            'Tanggal_Lahir' => 'required',
+            'Kelas' => 'required', 
+            'Jurusan' => 'required',
+            'Email' => 'required',
+            'No_Handphone' => 'required', ]);
+
+            //Mahasiswa::find($Nim)->update($request->all());
+            $kelas = Kelas::find($request->get('Kelas'));
+
+            $mahasiswa = Mahasiswa::with('kelas')->where('Nim', $Nim)->first();
+            $mahasiswa->Nim = $request->get('Nim');
+            $mahasiswa->Nama = $request->get('Nama');
+            if ($mahasiswa->Foto && file_exists(storage_path('app/public/' . $mahasiswa->Foto))) {
+                Storage::delete('public/' . $mahasiswa->Foto);
+            }
+            $image_name = $request->file('foto')->store('images', 'public');
+            $mahasiswa->Foto = $image_name;
+            $mahasiswa->Tanggal_Lahir = $request->get('Tanggal_Lahir');
+            $mahasiswa->Jurusan = $request->get('Jurusan');
+            $mahasiswa->Email = $request->get('Email');
+            $mahasiswa->No_Handphone = $request->get('No_Handphone');
+            $mahasiswa->kelas()->associate($kelas);
+            $mahasiswa->save();
+
+            return redirect()->route('mahasiswa.index') ->with('Success', 'Mahasiswa Berhasil Diupdate');
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  int  $Nim
      * @return \Illuminate\Http\Response
      */
-    public function destroy($nim)
+    public function destroy($Nim)
     {
-        Mahasiswa::find($nim)->delete();
-        return redirect()->route('mahasiswa.index')->with('success', 'Mahasiswa Berhasil  Dihapus');
+        Mahasiswa::find($Nim)->delete(); 
+        return redirect()->route('mahasiswa.index') -> with('Success', 'Mahasiswa Berhasil Dihapus');
     }
 
-    public function nilai($nim)
+    public function search(Request $request)
     {
-        $Mahasiswa = Mahasiswa::find($nim);
-        //$jajal = $mhs->matakuliah;
-        //$kelas = $mhs->kelas->nama_kelas;
-        return view('mahasiswas.nilai', compact('Mahasiswa'));
+        $keyword = $request->search;
+        $List = Mahasiswa::where('Nim', 'like', "%" . $keyword . "%")->paginate(5);
+        return view('users.Search', compact('List'))->with('i', (request()->input('page', 1) - 1) * 5);
     }
-    public function cetak_pdf($id)
+
+    public function nilai($Nim)
     {
-        $mhs = Mahasiswa::find($id);
-        $pdf = PDF::loadview('mahasiswas.cetak_pdf',compact('mhs'));
+        $List = Mahasiswa::with('kelas', 'matakuliah')->find($Nim);
+        return view('users.Nilai', compact('List'));
+    }
+
+    public function cetak_pdf($Nim)
+    {
+        $List = Mahasiswa::find($Nim);
+        $pdf = PDF::loadview('users.Cetak_Pdf',compact('List'), ['List' => $List]);
         return $pdf->stream();
     }
+
 }
